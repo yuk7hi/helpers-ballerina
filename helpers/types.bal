@@ -13,14 +13,36 @@ public type ip_response record {|
     string origin?;
 |};
 
+public type Error_responseBadRequest record {|
+    *http:BadRequest;
+    error_response body;
+|};
+
 public type Base64_responseOk record {|
     *http:Ok;
     base64_response body;
 |};
 
+public type error_response record {|
+    @constraint:String {maxLength: 50}
+    string message?;
+    @constraint:String {maxLength: 10}
+    string error_code?;
+|};
+
 public type uuid_response record {|
     @constraint:String {maxLength: 36, minLength: 36, pattern: re `^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$`}
     string uuid?;
+|};
+
+public type Error_responseNotFound record {|
+    *http:NotFound;
+    error_response body;
+|};
+
+public type Error_responseDefault record {|
+    *http:DefaultStatusCodeResponse;
+    error_response body;
 |};
 
 public type base64_response record {|

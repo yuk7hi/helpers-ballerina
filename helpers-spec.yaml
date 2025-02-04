@@ -1,26 +1,26 @@
 openapi: 3.0.1
 info:
-  title: httpbin.org
-  description: "A simple HTTP Request & Response Service.<br/> <br/> <b>Run locally:\
-    \ </b> <code>$ docker run -p 80:80 kennethreitz/httpbin</code>"
+  title: helpers
+  description: "A set of helpers inspired by httpbin.org"
   contact:
-    url: https://kennethreitz.org
-    email: me@kennethreitz.org
-  version: 0.9.2-42CrunchSubset
+    email: isabelle@akapelasolutions.com  
+  version: 0.0.1
 servers:
 - url: http://localhost:8080/
 tags:
-- name: Request inspection
-  description: Inspect the request data
-- name: Dynamic data
-  description: Generates random and dynamic data
+- name: echo
+  description: Echo data from the HTTP request
+- name: dynamic
+  description: Dynamic data generation
+- name: convert
+  description: Convert data across various formats  
 - name: AI
   description: Leverage AI to transform and validate data
 paths:
   /base64/decode/{value}:
     post:
       tags:
-      - Dynamic data
+      - convert
       summary: Decodes base64url-encoded string.
       parameters:
       - name: value
@@ -38,11 +38,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/base64_response' 
+        "400":
+          $ref: '#/components/responses/error'                 
   /base64/encode/{value}:
     post:
       tags:
-      - Dynamic data
-      summary: Decodes base64url-encoded string.
+      - convert
+      summary: Base64 encode input string .
       parameters:
       - name: value
         in: path
@@ -58,43 +60,52 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/base64_response'        
+                $ref: '#/components/schemas/base64_response'
+        "400":
+          $ref: '#/components/responses/error'                
   /ip:
     get:
       tags:
-      - Request inspection
-      summary: Returns the requester's IP Address.
+      - echo
+      summary: Returns the client IP address.
       responses:
         "200":
-          description: The Requester's IP Address.
+          description: Get the client IP address.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ip_response'
+        "404":
+          $ref: '#/components/responses/error'        
   /user-agent:
     get:
       tags:
-      - Request inspection
-      summary: Return the incoming requests's User-Agent header.
+      - echo
+      summary: Return the User-Agent header value
       responses:
         "200":
-          description: The request's User-Agent header.
+          description: Get the request User-Agent header value.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ua_response'
+        "404":
+          $ref: '#/components/responses/error'
+
   /uuid:
     get:
       tags:
-      - Dynamic data
-      summary: Return a UUID4.
+      - dynamic
+      summary: Returns a unique ID as per UUID v4 spec
       responses:
         "200":
-          description: A UUID4.
+          description: Get a UUID V4.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/uuid_response'
+        "default":
+          $ref: '#/components/responses/error'        
 
 components:
   schemas:
@@ -131,3 +142,20 @@ components:
           minLength: 36
           pattern: "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
           type: string
+    error_response:
+      type: object
+      additionalProperties: false
+      properties:
+        message:
+          maxLength: 50
+          type: string
+        error_code:
+          maxLength: 10
+          type: string
+  responses:
+    error:
+      description: 'Response for any error'
+      content:
+        application/json:
+          schema: 
+            $ref: '#/components/schemas/error_response'
