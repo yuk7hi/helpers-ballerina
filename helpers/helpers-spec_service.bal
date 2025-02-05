@@ -6,17 +6,25 @@ import ballerina/uuid;
 import ballerina/mime;
 import ballerina/log;
 
+//configurable string OPENAI_KEY = ?;
+
 
 listener http:Listener ep0 = new (8080, config = {host: "localhost"});
 
 service / on ep0 {
     # Returns the client IP address.
+    # + return - returns IP message or error messahe 
     #
     # http:Ok (Get the client IP address.)
     # http:NotFound (Response for any error)
-    resource function get ip(@http:CallerInfo {respondType:ip_response}  http:Caller hc) {
-        ip_response response =  { "origin" : hc.remoteAddress.ip};
-        error? result = hc->respond(response);
+    resource function get ip(@http:CallerInfo {respondType:ip_response}  http:Caller hc) returns error? {
+        ip_response response;
+        do {
+             response =  { "origin" : hc.remoteAddress.ip};
+        } on fail {
+             response = {"origin" : "unknown"};
+        }
+        check hc->respond(response);
     }
 
     # Returns the value of the user-agent header
