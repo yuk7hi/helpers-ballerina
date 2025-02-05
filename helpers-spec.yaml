@@ -4,9 +4,9 @@ info:
   description: "A set of helpers inspired by httpbin.org"
   contact:
     email: isabelle@akapelasolutions.com  
-  version: 0.0.1
+  version: 0.1.0
 servers:
-- url: http://localhost:8080/
+- url: http://localhost:8080
 tags:
 - name: echo
   description: Echo data from the HTTP request
@@ -91,7 +91,6 @@ paths:
                 $ref: '#/components/schemas/ua_response'
         "404":
           $ref: '#/components/responses/error'
-
   /uuid:
     get:
       tags:
@@ -149,7 +148,7 @@ components:
         message:
           maxLength: 50
           type: string
-        error_code:
+        code:
           maxLength: 10
           type: string
   responses:

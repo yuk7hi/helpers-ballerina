@@ -27,7 +27,7 @@ public type error_response record {|
     @constraint:String {maxLength: 50}
     string message?;
     @constraint:String {maxLength: 10}
-    string error_code?;
+    string code?;
 |};
 
 public type uuid_response record {|
