@@ -5,15 +5,15 @@ import ballerina/http;
 import ballerina/log;
 import ballerina/mime;
 import ballerina/uuid;
-//import ballerinax/openai.chat;
+import ballerinax/openai.chat;
 
-// configurable string OPENAI_KEY = ?;
+configurable string OPENAI_KEY = ?;
 
 configurable string host = "localhost";
 configurable int port = 8080;
 
 // Constants
-final int MAX_BASE64_STRING_SIZE = 100; 
+final int MAX_BASE64_STRING_SIZE = 100;
 
 listener http:Listener main_endpoint = new (port, config = {host});
 
@@ -62,7 +62,7 @@ service / on main_endpoint {
 
     resource function post 'base64/decode/[string value]() returns Base64_responseOk|Error_responseBadRequest {
         // Validate incoming string 
-        if (value.length() > MAX_BASE64_STRING_SIZE ) {
+        if (value.length() > MAX_BASE64_STRING_SIZE) {
             Error_responseBadRequest response = {body: {"message": "String is too large. Sorry.", "code": "x155"}};
             return response;
         }
@@ -90,13 +90,13 @@ service / on main_endpoint {
         log:printDebug("Inbound Value  " + value);
 
         // Validate incoming string 
-        if (value.length() > MAX_BASE64_STRING_SIZE ) {
+        if (value.length() > MAX_BASE64_STRING_SIZE) {
             Error_responseBadRequest response = {body: {"message": "String is too large. Sorry.", "code": "x155"}};
             return response;
         }
         string:RegExp pattern = re `^[0-9a-zA-Z\\s!$-_]+$`;
 
-        if ( pattern.isFullMatch(value) is false) {
+        if (pattern.isFullMatch(value) is false) {
             Error_responseBadRequest response = {body: {"message": "Invalid characters. Sorry.", "code": "x157"}};
             return response;
         }
@@ -115,35 +115,38 @@ service / on main_endpoint {
         }
     }
 
-    // resource function post ai/spelling( @http:Payload ai_text_spelling ) {
-    //     http:RetryConfig retryConfig = {
-    //         interval: 5, // Initial retry interval in seconds.
-    //         count: 3, // Number of retry attempts before stopping.
-    //         backOffFactor: 2.0 // Multiplier of the retry interval.
-    //     };
-    //     final chat:Client openAIChat = check new ({auth: {token: OPENAI_KEY}, retryConfig});
+    resource function post ai/spelling(@http:Payload ai_spelling_payload data) returns error|ai_spelling_responseOk|Error_responseBadRequest {
+        http:RetryConfig retryConfig = {
+            interval: 5, // Initial retry interval in seconds.
+            count: 3, // Number of retry attempts before stopping.
+            backOffFactor: 2.0 // Multiplier of the retry interval.
+        };
 
-    //     // Extract body contents
+        final chat:Client openAIChat = check new ({auth: {token: OPENAI_KEY}, retryConfig});
 
-    //     chat:CreateChatCompletionRequest request = {
-    //         model: "gpt-4o-mini",
-    //         messages: [
-    //             {
-    //                 "role": "user",
-    //                 "content": string `Fix grammar and spelling mistakes of the content ${check
-    //                 io:fileReadString(filePath)}`
-    //             }
-    //         ]
-    //     };
+        // Extract body contents
+        string basePrompt = "Fix grammar and spelling mistakes of this content: ";
 
-    //     chat:CreateChatCompletionResponse response = check openAIChat->/chat/completions.post(request);
-    //     string? text = response.choices[0].message.content;
+        chat:CreateChatCompletionRequest request = {
+            model: "gpt-4o-mini",
+            messages: [
+                {
+                    "role": "user",
+                    "content": basePrompt.concat(data.text)
+                }
+            ]
+        };
+            chat:CreateChatCompletionResponse ai_response = check openAIChat->/chat/completions.post(request);
+            string? correctedText = ai_response.choices[0].message.content;
 
-    //     if text is () {
-    //         return error("Failed to correct grammar and spelling in the given text.");
-    //     }
-    //     io:println(string `Corrected: ${text}`);
+            if (correctedText is ()) {
+                Error_responseBadRequest http_response = {body: {"message": "Could not correct grammar/spelling", "code": "x500"}}; 
+                return http_response;   
+            } else {
+                ai_spelling_responseOk http_response = {body: {correctedText} };
+                return  http_response;
+            }
 
-    // }
+    }
 
 }

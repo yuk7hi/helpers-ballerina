@@ -49,3 +49,18 @@ public type base64_response record {|
     @constraint:String {maxLength: 100, pattern: re `^[0-9\.]+$`}
     string value?;
 |};
+
+type ai_spelling_payload record {
+    @constraint:String {maxLength: 100, pattern: re `^[\w\s]+$`}
+    string text;
+};
+
+public type ai_spelling_response record {
+    @constraint:String {maxLength: 150, pattern: re `^[\w\s]+$`}
+    string correctedText;
+};
+
+public type ai_spelling_responseOk record {|
+    *http:Ok;
+    ai_spelling_response body;
+|};
