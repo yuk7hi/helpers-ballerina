@@ -40,8 +40,8 @@ public type Error_responseNotFound record {|
     error_response body;
 |};
 
-public type Error_responseDefault record {|
-    *http:DefaultStatusCodeResponse;
+public type Error_serverFailure record {|
+    *http:InternalServerError;
     error_response body;
 |};
 

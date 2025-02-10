@@ -10,7 +10,9 @@ import ballerinax/openai.chat;
 configurable string OPENAI_KEY = ?;
 
 configurable string host = "localhost";
-configurable int port = 8080;
+configurable int port = 8081;
+
+configurable string aiModel = "gpt-4o-mini";
 
 // Constants
 final int MAX_BASE64_STRING_SIZE = 100;
@@ -19,10 +21,10 @@ listener http:Listener main_endpoint = new (port, config = {host});
 
 service / on main_endpoint {
     # Returns the client IP address.
-    # + return - returns IP message or error messahe 
+    # + return - returns IP message or unknown if the remote IP can't be found in the remoteAddress block.
     #
     # http:Ok (Get the client IP address.)
-    # http:NotFound (Response for any error)
+    # If the hc-respond call fails, a 500 error will be generated automatically.
     resource function get ip(@http:CallerInfo {respondType: ip_response} http:Caller hc) returns error? {
         ip_response response;
         do {
@@ -34,7 +36,7 @@ service / on main_endpoint {
     }
 
     # Returns the value of the user-agent header
-    # the http:header annotation ensures that a default error message will be automatically
+    # The http:header annotation ensures that a default error message will be automatically
     # created and returned if the header can't be found.
     # + return - returns can be any of following types 
     # http:Ok (Get a UUID V4.)
@@ -47,32 +49,35 @@ service / on main_endpoint {
     #
     # + return - returns can be any of following types 
     # http:Ok (Get a UUID V4.)
-    # http:DefaultStatusCodeResponse (Response for any error)
-    resource function get uuid() returns uuid_response|error_response {
+    # http:Error_serverFailure (Response for any error)
+    resource function get uuid() returns uuid_response|Error_serverFailure {
 
         do {
             string tempUuid = uuid:createRandomUuid();
+            log:printDebug("Generated UUID: " + tempUuid);
             uuid_response response = {"uuid": tempUuid};
             return response;
-        } on fail {
-            error_response response = {"message": "failed to create UUID", "code": "x356"};
+        } on fail error e {
+            log:printDebug("UUID Generated failed: " + e.toString());
+            Error_serverFailure response = {body: {"message": "failed to create UUID", "code": "err_001"}};
             return response;
         }
     }
 
     resource function post 'base64/decode/[string value]() returns Base64_responseOk|Error_responseBadRequest {
         // Validate incoming string 
+        log:printDebug("Incoming text: " + value);
+
         if (value.length() > MAX_BASE64_STRING_SIZE) {
-            Error_responseBadRequest response = {body: {"message": "String is too large. Sorry.", "code": "x155"}};
+            Error_responseBadRequest response = {body: {"message": "String is too large. Sorry.", "code": "err_002"}};
             return response;
         }
         string:RegExp pattern = re `^[0-9a-zA-Z=]+$`;
 
         if ((value.matches(pattern)) is false) {
-            Error_responseBadRequest response = {body: {"message": "Invalid characters. Sorry.", "code": "x156"}};
+            Error_responseBadRequest response = {body: {"message": "Invalid characters. Sorry.", "code": "err_003"}};
             return response;
         }
-        log:printDebug("Inbound Value  " + value);
         string|error decodedValue = mime:base64Decode(value).ensureType(string);
 
         if (decodedValue is string) {
@@ -80,8 +85,8 @@ service / on main_endpoint {
             log:printDebug("Decoded Value OK  " + decodedValue);
             return response;
         } else {
-            Error_responseBadRequest response = {body: {"message": "unable to decode", "code": "x124"}};
-            log:printDebug("Error text " + decodedValue.toString());
+            Error_responseBadRequest response = {body: {"message": "unable to decode", "code": "err_004"}};
+            log:printDebug("Error decoding text: " + decodedValue.toString());
             return response;
         }
     }
@@ -91,13 +96,13 @@ service / on main_endpoint {
 
         // Validate incoming string 
         if (value.length() > MAX_BASE64_STRING_SIZE) {
-            Error_responseBadRequest response = {body: {"message": "String is too large. Sorry.", "code": "x155"}};
+            Error_responseBadRequest response = {body: {"message": "String is too large. Sorry.", "code": "err_002"}};
             return response;
         }
         string:RegExp pattern = re `^[0-9a-zA-Z\\s!$-_]+$`;
 
         if (pattern.isFullMatch(value) is false) {
-            Error_responseBadRequest response = {body: {"message": "Invalid characters. Sorry.", "code": "x157"}};
+            Error_responseBadRequest response = {body: {"message": "Invalid characters. Sorry.", "code": "err_003"}};
             return response;
         }
 
@@ -105,12 +110,12 @@ service / on main_endpoint {
 
         if (encodedValue is string) {
             Base64_responseOk response = {body: {"value": encodedValue}};
-            log:printDebug("Encoded Value OK  " + encodedValue);
+            log:printDebug("Encoded Value: " + encodedValue);
             return response;
         }
         else {
-            Error_responseBadRequest response = {body: {"message": "unable to encode", "code": "x123"}};
-            log:printDebug("Error text  " + encodedValue.toString());
+            Error_responseBadRequest response = {body: {"message": "unable to encode", "code": "err_006"}};
+            log:printDebug("Error encoding text:  " + encodedValue.toString());
             return response;
         }
     }
@@ -128,7 +133,7 @@ service / on main_endpoint {
         string basePrompt = "Fix grammar and spelling mistakes of this content: ";
 
         chat:CreateChatCompletionRequest request = {
-            model: "gpt-4o-mini",
+            model: aiModel,
             messages: [
                 {
                     "role": "user",
@@ -136,16 +141,16 @@ service / on main_endpoint {
                 }
             ]
         };
-            chat:CreateChatCompletionResponse ai_response = check openAIChat->/chat/completions.post(request);
-            string? correctedText = ai_response.choices[0].message.content;
+        chat:CreateChatCompletionResponse ai_response = check openAIChat->/chat/completions.post(request);
+        string? correctedText = ai_response.choices[0].message.content;
 
-            if (correctedText is ()) {
-                Error_responseBadRequest http_response = {body: {"message": "Could not correct grammar/spelling", "code": "x500"}}; 
-                return http_response;   
-            } else {
-                ai_spelling_responseOk http_response = {body: {correctedText} };
-                return  http_response;
-            }
+        if (correctedText is ()) {
+            Error_responseBadRequest http_response = {body: {"message": "Could not correct grammar/spelling", "code": "err_008"}};
+            return http_response;
+        } else {
+            ai_spelling_responseOk http_response = {body: {correctedText}};
+            return http_response;
+        }
 
     }
 
