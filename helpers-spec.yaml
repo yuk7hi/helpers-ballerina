@@ -5,8 +5,9 @@ info:
   contact:
     email: isabelle@akapelasolutions.com  
   version: 0.1.0
+
 servers:
-- url: http://localhost:8080
+- url: http://localhost:8081
 tags:
 - name: echo
   description: Echo data from the HTTP request
@@ -17,6 +18,38 @@ tags:
 - name: AI
   description: Leverage AI to transform and validate data
 paths:
+
+  /ai/spelling:
+    post:
+      operationId: postAiSpelling
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ai_spelling_payload'
+        required: true
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ai_spelling_response'
+        "400":
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/error_response'
+                - $ref: '#/components/schemas/ErrorPayload'
+        "500":
+          description: InternalServerError
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPayload'
+
   /base64/decode/{value}:
     post:
       tags:
@@ -56,7 +89,7 @@ paths:
           default: "Ballerina is awesome!"
       responses:
         "200":
-          description: Decoded base64 content.
+          description: Encoded base64 content.
           content:
             application/json:
               schema:
@@ -151,6 +184,49 @@ components:
         code:
           maxLength: 10
           type: string
+
+    ai_spelling_payload:
+      required:
+      - text
+      type: object
+      properties:
+        text:
+          maxLength: 100
+          pattern: "^[\\w\\s]+$"
+          type: string
+    ai_spelling_response:
+      required:
+      - correctedText
+      type: object
+      properties:
+        correctedText:
+          maxLength: 150
+          pattern: "^[\\w\\s]+$"
+          type: string
+    ErrorPayload:
+      required:
+      - message
+      - method
+      - path
+      - reason
+      - status
+      - timestamp
+      type: object
+      properties:
+        timestamp:
+          type: string
+        status:
+          type: integer
+          format: int64
+        reason:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+        method:
+          type: string
+      
   responses:
     error:
       description: 'Response for any error'
