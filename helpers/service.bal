@@ -17,7 +17,7 @@ final int MAX_BASE64_STRING_SIZE = 100;
 
 listener http:Listener main_endpoint = new (port, config = {host});
 
-service / on main_endpoint {
+service / on new http:Listener(8080) {
     # Returns the client IP address.
     # + return - returns IP message or error messahe 
     #
