@@ -1,6 +1,6 @@
 schemaVersion: 1.1
 endpoints:
-  - name: gs-helpers
+  - name: helpers-api
     service:
       port: 8081
       basePath: /
