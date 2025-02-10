@@ -15,9 +15,7 @@ configurable int port = 8080;
 // Constants
 final int MAX_BASE64_STRING_SIZE = 100;
 
-listener http:Listener main_endpoint = new (port, config = {host});
-
-service / on new http:Listener(9090) {
+service / on new http:Listener(port, config = {host}) {
     # Returns the client IP address.
     # + return - returns IP message or error messahe 
     #
