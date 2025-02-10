@@ -8,4 +8,4 @@ endpoints:
     displayName: helpers-api
     networkVisibilities:
       - Project
-    schemaFilePath: ./helpers/helpers-spec.yaml
+    schemaFilePath: helpers-spec.yaml
