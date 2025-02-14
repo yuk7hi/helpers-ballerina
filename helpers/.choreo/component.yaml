@@ -9,4 +9,4 @@ endpoints:
     type: REST
     networkVisibilities: 
       - Public
-    schemaFilePath: helpers-spec.yaml
+    schemaFilePath: service_openapi.yaml
