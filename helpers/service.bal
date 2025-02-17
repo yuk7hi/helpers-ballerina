@@ -17,7 +17,7 @@ configurable string aiModel = "gpt-4o-mini";
 // Constants
 final int MAX_BASE64_STRING_SIZE = 100;
 
-service / on new http:Listener(port, config = {host}) {
+service / on new http:Listener(8081) {
     # Returns the client IP address.
     # + return - returns IP message or unknown if the remote IP can't be found in the remoteAddress block.
     #
